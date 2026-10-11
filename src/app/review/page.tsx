@@ -195,7 +195,10 @@ function FindingCard({
             />
             <div className="flex gap-2">
               <button
-                onClick={() => onDecision(finding.id, "edited", editValue)}
+                onClick={() => {
+                  if (!editValue.trim()) return;
+                  onDecision(finding.id, "edited", editValue);
+                }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                 style={{ background: "oklch(0.65 0.2 145 / 0.2)", border: "1px solid oklch(0.65 0.2 145 / 0.4)", color: "oklch(0.78 0.18 145)" }}>
                 <CheckCircle2 className="w-3.5 h-3.5" /> Approve Edited
@@ -497,7 +500,7 @@ function ReviewPageContent() {
                   </div>
                   <div className="rounded-xl bg-white/[0.03] border border-white/[0.05] p-2.5">
                     <p className="text-[10px] uppercase font-semibold text-white/40 mb-0.5">Price</p>
-                    <p className="text-xs font-medium text-white">₹{parseInt(listing.price || "0").toLocaleString("en-IN")}</p>
+                    <p className="text-xs font-medium text-white">₹{parseFloat(listing.price || "0").toLocaleString("en-IN")}</p>
                   </div>
                   <div className="rounded-xl bg-white/[0.03] border border-white/[0.05] p-2.5">
                     <p className="text-[10px] uppercase font-semibold text-white/40 mb-0.5">Category</p>

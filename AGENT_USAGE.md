@@ -76,11 +76,11 @@ During development, several agent suggestions were caught, rejected, or re-engin
 - **What happened:** The agent hardcoded `gemini-1.5-flash` in the API URL. In the active 2026 API version, this returned `404 Not Found`.
 - **Engineer correction:** Ran an introspection query on `ModelService.ListModels` to inspect the active models on the key. Updated the configuration to `gemini-flash-latest` with `generationConfig: { responseMimeType: "application/json" }`. Verified the live API with a standalone Node script before deploying it to the UI.
 
-### ⚠️ Mistake 4: Mobile Viewport Collision on 320px Constraints
+### ⚠️ Mistake 3: Mobile Viewport Collision on 320px Constraints
 - **What happened:** On narrow viewports (320px width), duplicate navigation headers across routes wrapped "New Review" onto two vertical lines (`New \n Review`) while active pills crowded out adjacent links.
 - **Engineer correction:** Extracted a unified `<Navbar />` component with `whitespace-nowrap`, icon symmetry (`Plus` and `History`), and responsive label folding (`New` on mobile, `New Review` on desktop). Verified via headless browser recordings at exact 320x600 resolution.
 
-### ⚠️ Mistake 5: Hard API Key Dependency Blocking Offline Evaluators
+### ⚠️ Mistake 4: Hard API Key Dependency Blocking Offline Evaluators
 - **What happened:** Evaluators cloning the repository without an immediate Gemini API key would receive blocking 500 error boundaries on the review screen.
 - **Engineer correction:** Architected `simulatePolicyReview`, an offline deterministic heuristic policy engine that automatically activates when `GEMINI_API_KEY` is omitted or rate-limited. Flags exact policy sections and realistic scores without network dependency.
 
@@ -101,3 +101,5 @@ Verification followed an empirical multi-step pipeline:
    - Verified **Original Listing Context**: Tested the new collapsible listing inspector on `/review`.
    - Verified **Human-in-the-Loop Decisions**: Approved, rejected, and edited findings with state persistence.
    - Verified **Audit History Management**: Tested live search, status filtering, and 1-click JSON report export.
+5. **Negative-Path Security Testing:**
+   - Ran a structured bypass audit against the deployed app. Identified and patched 4 vulnerabilities: phone regex bypass (spaced digits evading `\d{10}`), URL bypass (bare `www.` without `http://`), decimal price truncation (`parseInt` → `parseFloat`), and blank-edit approval guard. All fixes re-verified with `npm run check` (16/16 tests passing) before final submission.

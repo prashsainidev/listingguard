@@ -337,7 +337,7 @@ export default function HistoryPage() {
                       </div>
                       <h3 className="text-base font-semibold text-white truncate pr-4">{review.listing.title}</h3>
                       <p className="text-xs text-white/40 mt-0.5">
-                        {review.listing.category} · {review.listing.seller} · ₹{parseInt(review.listing.price).toLocaleString("en-IN")}
+                        {review.listing.category} · {review.listing.seller} · ₹{parseFloat(review.listing.price).toLocaleString("en-IN")}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">

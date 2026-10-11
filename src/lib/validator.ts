@@ -37,10 +37,12 @@ export function validateListing(
   }
 
   // Check for contact info in title
+  // Strip non-digit chars first to catch spaced/dashed numbers like "98765 43210"
+  const titleDigitsOnly = listing.title.replace(/\D/g, "");
   if (
-    /\d{10}/.test(listing.title) ||
+    titleDigitsOnly.length >= 10 ||
     /@/.test(listing.title) ||
-    /http/.test(listing.title)
+    /https?:\/\/|www\./i.test(listing.title)
   ) {
     errors.push({
       field: "title",
@@ -64,9 +66,11 @@ export function validateListing(
   }
 
   // Check for contact info in description
+  // Strip non-digit chars first to catch spaced/dashed numbers like "98765 43210"
+  const descDigitsOnly = listing.description.replace(/\D/g, "");
   if (
-    /\d{10}/.test(listing.description) ||
-    /http[s]?:\/\//.test(listing.description) ||
+    descDigitsOnly.length >= 10 ||
+    /https?:\/\/|www\./i.test(listing.description) ||
     /@[a-zA-Z]/.test(listing.description)
   ) {
     errors.push({

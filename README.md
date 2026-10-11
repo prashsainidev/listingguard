@@ -103,7 +103,7 @@ In modern multi-seller marketplaces, low-quality or fraudulent listings degrade 
 - [x] Local storage data persistence for review logs and listings across browser reloads.
 - [x] Structured logger emitting JSON audit trails for validation and AI cycles.
 - [x] 16 automated unit tests covering all deterministic business rules in 0.8s.
-- [x] Comprehensive documentation (`README.md`, `AGENT_USAGE.md`, `.env.example`, `INTERVIEW_NOTES.md`).
+- [x] Comprehensive documentation (`README.md`, `AGENT_USAGE.md`, `.env.example`) with security audit and bypass patch notes.
 
 ### ⏸️ Intentionally Excluded Scope (Rationale)
 - **External PostgreSQL / Redis:** Excluded in favor of client-side local storage and in-memory caches to keep the repository self-contained, zero-dependency, and immediately runnable for reviewers without Docker setup.
