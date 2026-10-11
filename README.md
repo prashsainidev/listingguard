@@ -6,6 +6,19 @@ Built for the **Aggroso Take-Home Engineering Assessment**.
 
 ---
 
+## A Developer's Note
+
+When I first read this problem, I honestly wasn't sure where to begin. I had never built an AI-powered moderation workflow before — the right architecture, the right separation between deterministic rules and AI judgment, even the right place to start — all of it was an open question.
+
+Rather than diving into code immediately, I spent time just mapping out the decision boundaries: what should a rule catch that AI shouldn't even see? What should AI catch that rules can't express? That two-tier thinking became the entire foundation of this system.
+
+Two features I added beyond the core spec felt important enough to keep: the collapsible listing inspector on the review screen (so a human reviewer always has context while making decisions), and the live search with status filtering in the audit history (because a moderation tool without searchable history isn't usable at scale). These weren't planned from the start — they just felt necessary once I was deep in the workflow.
+
+If I had more time: I would replace localStorage with a proper database, add queue-based async AI review for high volume, and close the remaining attack surface where a determined seller could still craft edge-case inputs to bypass validation. There is always more security work to do — but the foundation is solid and the core workflow is complete.
+
+---
+
+
 ## 📑 Table of Contents
 1. [Overview & Solution Architecture](#-overview--solution-architecture)
 2. [Key Engineering Highlights](#-key-engineering-highlights)

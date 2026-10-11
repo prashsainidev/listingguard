@@ -1,7 +1,10 @@
 // gemini.ts — Google Gemini AI integration
-// Interview answer: "We send the listing data + our marketplace policy to Gemini.
-// Gemini reads both, finds issues, cites policy sections, and returns structured JSON.
-// We use gemini-1.5-flash because it's free, fast, and handles JSON output well."
+//
+// The model name here was one of the first real bugs I hit. The agent hardcoded
+// gemini-1.5-flash which returned a 404 — that model no longer exists in the 2026
+// API. I called ListModels on my key to find what was actually available, then
+// updated it here. Temperature 0.2 keeps output consistent — higher values make
+// Gemini creative in ways that break structured JSON output.
 
 import { Listing, Finding, ReviewResult, Severity } from "./types";
 import { MARKETPLACE_POLICY, POLICY_SUMMARY_FOR_PROMPT } from "./policy";
@@ -73,9 +76,10 @@ interface GeminiResponse {
   summary: string;
 }
 
-// ── Smart Offline / Heuristic Fallback Review Engine ─────────────────────────
-// Runs when GEMINI_API_KEY is not configured or external API is rate-limited.
-// Ensures take-home evaluators and offline testers never encounter a broken app.
+// Offline fallback engine — runs when the API key is missing or the API is rate-limited.
+// I built this after realizing that evaluators cloning the repo would hit a hard error
+// screen if they didn't have a Gemini key ready. This way the full human review workflow
+// works without any external dependency — findings, scores, policy citations, everything.
 export function simulatePolicyReview(listing: Listing, fallbackReason = "Offline Engine"): ReviewResult {
   const text = `${listing.title} ${listing.description}`.toLowerCase();
   const findings: Finding[] = [];

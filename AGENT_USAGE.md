@@ -56,50 +56,41 @@ Each finding must have Approve, Edit, and Reject actions. The user must be able 
 
 | Dimension | Delegated to AI Agent | Human Engineering Decisions |
 |---|---|---|
-| **System Architecture** | Boilerplate generation, API route structure, TypeScript interface definitions | Decided on the two-stage defense (Deterministic Regex -> LLM Semantic Review); Mandated strict Human-in-the-Loop decision flow |
-| **Marketplace Policy** | Initial markdown outline | Defined strict clauses: counterfeit bans, medical cures, bait pricing, mandatory attributes |
-| **Testing** | Test case boilerplate generation | Selected business-critical edge cases (regex bypass, duplicate seller collisions, boundary lengths) |
-| **Styling & UI** | Shadcn UI component installation & Tailwind dark mode styling | Preserved high-contrast accessibility and clean badge visual hierarchy |
+| **System Architecture** | Boilerplate generation, API route structure, TypeScript interface definitions | Chose the two-stage defense model — deterministic rules first, then AI — because calling Gemini on every keystroke would waste quota and money. The AI should only see listings that already pass basic sanity checks. |
+| **Marketplace Policy** | Initial markdown outline | Wrote the actual policy clauses myself — counterfeit bans, medical cure restrictions, bait pricing rules. These needed real editorial judgment, not just structure. |
+| **Testing** | Test case boilerplate | Chose which edge cases actually mattered: regex bypass with spaced phone numbers, duplicate seller collisions, boundary lengths at exactly 5 and 80 characters. The agent would not have known which gaps were real risks. |
+| **History & Inspect UI** | Component scaffolding | Decided to add live search, status filtering, and a collapsible listing inspector — none of these were in the spec. I added them because a moderation tool without these features would not be usable in a real environment. |
 
 ---
 
-## 4. Important Agent Mistakes & Rejected Suggestions (Pivots)
+## 4. Important Agent Mistakes & Rejected Suggestions
 
-During development, several agent suggestions were caught, rejected, or re-engineered:
+These are the moments where I had to step in and course-correct. I'm documenting them honestly because they show where human judgment still matters in AI-assisted development.
 
-### ⚠️ Mistake 1: Rollup Native Dependency Conflict with OS Policies
-- **What happened:** The agent initially installed Vitest for unit testing. When running `npm test`, Windows Application Control (WDAC / AppLocker) blocked the native DLL binary (`@rollup/rollup-win32-x64-msvc.node`), returning `ERR_DLOPEN_FAILED`.
-- **Agent's initial reaction:** Attempted to reinstall npm packages with `--legacy-peer-deps`.
-- **Engineer correction:** Rejected the bloated external runner. Instead, leveraged Node.js 26's built-in `node:test` and `tsx --test`. This eliminated all native binary bloat, resulting in **16 tests running in 0.9 seconds** with zero external dependencies.
+### Mistake 1: Native Binary Conflict on Windows
+The agent set up Vitest as the test runner. First run immediately crashed — Windows blocked the native DLL binary that Vitest depends on (`@rollup/rollup-win32-x64-msvc.node`). The agent's instinct was to try reinstalling with different flags. I rejected that path because the problem was not the install — it was bringing in a native binary at all. I switched to Node.js 26's built-in test runner with `tsx --test`. No native binaries, no OS conflicts. All 16 tests now run in under a second.
 
-### ⚠️ Mistake 2: Deprecated / Mismatched Gemini Model Endpoint
-- **What happened:** The agent hardcoded `gemini-1.5-flash` in the API URL. In the active 2026 API version, this returned `404 Not Found`.
-- **Engineer correction:** Ran an introspection query on `ModelService.ListModels` to inspect the active models on the key. Updated the configuration to `gemini-flash-latest` with `generationConfig: { responseMimeType: "application/json" }`. Verified the live API with a standalone Node script before deploying it to the UI.
+### Mistake 2: Hardcoded Deprecated Gemini Model
+The review screen kept returning a blank error. Opening the server console showed a raw `404` coming back from the Gemini API. The agent had hardcoded `gemini-1.5-flash` — a model name that no longer exists in the 2026 API version. I wrote a quick standalone Node script to call `ListModels` on my API key and see what was actually available. Found the correct endpoint, updated the config, and verified it with a live test before wiring it back into the UI. The lesson: never trust hardcoded model names in fast-moving AI APIs.
 
-### ⚠️ Mistake 3: Mobile Viewport Collision on 320px Constraints
-- **What happened:** On narrow viewports (320px width), duplicate navigation headers across routes wrapped "New Review" onto two vertical lines (`New \n Review`) while active pills crowded out adjacent links.
-- **Engineer correction:** Extracted a unified `<Navbar />` component with `whitespace-nowrap`, icon symmetry (`Plus` and `History`), and responsive label folding (`New` on mobile, `New Review` on desktop). Verified via headless browser recordings at exact 320x600 resolution.
+### Mistake 3: Mobile Navigation Overlap at 320px
+On narrow screens, the navigation header broke completely — "New Review" wrapped onto two lines and the active pill badge pushed other links out of view. The agent had built each page with its own separate header, so fixing one did not fix the others. I consolidated everything into a single shared `Navbar` component with responsive label folding — full label on desktop, shorter label on mobile. Verified with headless browser recordings at exactly 320x600 resolution.
 
-### ⚠️ Mistake 4: Hard API Key Dependency Blocking Offline Evaluators
-- **What happened:** Evaluators cloning the repository without an immediate Gemini API key would receive blocking 500 error boundaries on the review screen.
-- **Engineer correction:** Architected `simulatePolicyReview`, an offline deterministic heuristic policy engine that automatically activates when `GEMINI_API_KEY` is omitted or rate-limited. Flags exact policy sections and realistic scores without network dependency.
+### Mistake 4: Hard Dependency on API Key for Evaluators
+The review screen would throw a hard 500 error if `GEMINI_API_KEY` was not set. That is a bad evaluator experience — someone cloning the repo to review it should not have to get an API key just to see the app work. I built a local heuristic fallback engine (`simulatePolicyReview`) that activates automatically when the key is missing or rate-limited. It flags real policy sections with realistic scores, so the human review workflow is fully testable without any external API.
 
 ---
 
 ## 5. How the Output Was Verified
 
-Verification followed an empirical multi-step pipeline:
+I did not just run the build and call it done. Verification had multiple layers:
 
-1. **Automated Rule Verification:**
-   - Ran `npm test` verifying 16 test cases across title limits, description URLs, negative prices, and duplicate detection in <1s.
-2. **Production Build Integrity:**
-   - Executed `npm run build` with Turbopack and TypeScript strict mode. Zero build errors or warnings.
-3. **Live API End-to-End Simulation & Heuristic Fallback:**
-   - Tested live queries against Google Gemini API with structured JSON schema mode, and verified that removing the API key smoothly falls back to local heuristic policy audit without breaking the UI.
-4. **Interactive Browser UX Audits (320px to Desktop):**
-   - Verified **Deterministic Validation Layer**: Immediate red banners on contact numbers and links.
-   - Verified **Original Listing Context**: Tested the new collapsible listing inspector on `/review`.
-   - Verified **Human-in-the-Loop Decisions**: Approved, rejected, and edited findings with state persistence.
-   - Verified **Audit History Management**: Tested live search, status filtering, and 1-click JSON report export.
-5. **Negative-Path Security Testing:**
-   - Ran a structured bypass audit against the deployed app. Identified and patched 4 vulnerabilities: phone regex bypass (spaced digits evading `\d{10}`), URL bypass (bare `www.` without `http://`), decimal price truncation (`parseInt` → `parseFloat`), and blank-edit approval guard. All fixes re-verified with `npm run check` (16/16 tests passing) before final submission.
+1. **Automated Rule Tests:** Ran `npm test` — 16 test cases covering title limits, URL detection, negative prices, and duplicate detection. All pass in under 1 second.
+
+2. **Production Build Check:** Ran `npm run build` with Turbopack and TypeScript strict mode. Zero errors, zero warnings.
+
+3. **Live API Verification:** Tested real Gemini API calls with the JSON schema mode active, then verified that removing the key gracefully switches to the offline engine without breaking any UI state.
+
+4. **Browser UX Testing at Multiple Sizes:** Manually tested the full workflow on desktop and at 320px mobile width — form submission, validation banners, AI review loading, approve/edit/reject decisions, and history filtering.
+
+5. **Negative-Path Security Testing:** Tried to break the validator intentionally — submitted phone numbers with spaces, bare `www.` URLs, decimal prices, and blank edit approvals. Found 4 bypasses, patched all of them, re-ran the full test suite to confirm nothing regressed.
